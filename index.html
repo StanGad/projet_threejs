@@ -2,65 +2,19 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dino Runner 3D</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        #score {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: white;
-            font-family: monospace;
-            font-size: 24px;
-        }
-        .game-over {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-family: monospace;
-            font-size: 24px;
-            display: none;
-        }
-        #dino-info {
-            position: fixed;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            display: none;
-            pointer-events: none;
-        }
-        .mobile-control {
-            display: none;
-        }
-    </style>
-    <script async src="https://unpkg.com/es-module-shims/dist/es-module-shims.js"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/"
-        }
-    }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dino Runner</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="score">0</div>
-    <div class="game-over">GAME OVER - Appuyez sur Espace pour recommencer</div>
-    <div id="dino-info">Ceci est votre dinosaure. Appuyez sur ESPACE pour sauter!</div>
-    <button id="jump-button" class="mobile-control">JUMP</button>
+    <div class="game-over">GAME OVER - Tapez pour recommencer</div>
+    <div id="dino-info">Votre dinosaure</div>
+    <button id="jump-button">SAUTER</button>
     <audio id="hover-sound" src="Assets/hover.mp3" preload="auto"></audio>
     <audio id="jump-sound" src="Assets/jump.mp3" preload="auto"></audio>
     <audio id="dead-sound" src="Assets/dead.mp3" preload="auto"></audio>
     <audio id="monster-hover-sound" src="Assets/monster.mp3" preload="auto"></audio>
-    <script type="module" src="script.js"></script>
 </body>
 </html>
  

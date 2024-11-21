@@ -73,19 +73,15 @@ function init() {
     // Ajout des événements de souris
     window.addEventListener('mousemove', onMouseMove);
 
-    // Ajout des contrôles tactiles
+    // Gestion des événements tactiles
     const jumpButton = document.getElementById('jump-button');
-    jumpButton.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (!isGameOver) jump();
-    });
     
-    // Support des événements tactiles
-    document.addEventListener('touchstart', (e) => {
-        if (isGameOver) {
-            resetGame();
-        }
-    });
+    // Événements pour le bouton de saut
+    jumpButton.addEventListener('touchstart', handleJumpTouch, { passive: false });
+    jumpButton.addEventListener('mousedown', handleJumpTouch, { passive: false });
+    
+    // Événement pour le redémarrage
+    document.addEventListener('touchstart', handleRestart, { passive: false });
 
     animate();
 }
@@ -230,20 +226,31 @@ function onKeyDown(event) {
 }
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
+    
+    // Ajuster la position de la caméra pour mobile
+    if (width <= 768) {
+        camera.position.set(6, 4, 7); // Ajustez ces valeurs selon vos besoins
+        camera.lookAt(0, 1, -2);
+    } else {
+        camera.position.set(5, 3, 5);
+        camera.lookAt(0, 0, 0);
+    }
 }
 
 function animate(currentTime) {
     requestAnimationFrame(animate);
     
-    // Calcul du delta time
-    const deltaTime = (currentTime - lastTime) / 1000;
+    const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30); // Limite à 30 FPS sur mobile
     lastTime = currentTime;
     
-    // Mise à jour du jeu avec un timing constant
-    updateGame(Math.min(deltaTime, fixedDeltaTime));
+    updateGame(deltaTime);
+    renderer.render(scene, camera);
 }
 
 function onMouseMove(event) {
@@ -281,5 +288,24 @@ function onMouseMove(event) {
         isMonsterHovering = false;
     }
 }
+
+function handleJumpTouch(e) {
+    e.preventDefault(); // Empêche le comportement par défaut
+    if (!isGameOver) {
+        jump();
+    }
+}
+
+function handleRestart(e) {
+    if (isGameOver) {
+        e.preventDefault();
+        resetGame();
+    }
+}
+
+// Désactiver le défilement sur mobile
+document.body.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
 
 init(); 
