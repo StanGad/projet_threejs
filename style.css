@@ -1,7 +1,9 @@
 body {
     margin: 0;
+    padding: 0;
     overflow: hidden;
     background: #000;
+    font-family: Arial, sans-serif;
 }
 
 #info-panel {
@@ -127,5 +129,47 @@ body {
     #score {
         font-size: 24px;
     }
+}
+
+#score {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-size: 30px;
+    font-weight: bold;
+    z-index: 100;
+}
+
+.game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 24px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    display: none;
+    z-index: 100;
+}
+
+#dino-info {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+    pointer-events: none;
+    z-index: 100;
+}
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
 }
   
