@@ -117,7 +117,7 @@ body {
 
 @media (max-width: 768px) {
     #jump-button {
-        display: block;
+        display: block; 
     }
     
     .game-over {
