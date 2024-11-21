@@ -70,4 +70,27 @@ body {
     width: 0%;
     transition: width 0.3s;
 }
+
+.mobile-control {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+/* Afficher le bouton uniquement sur mobile */
+@media (max-width: 768px) {
+    .mobile-control {
+        display: block;
+    }
+}
   

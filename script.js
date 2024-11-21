@@ -27,6 +27,9 @@ let hoverSound, jumpSound, deadSound, monsterHoverSound;
 let isHovering = false;
 let isMonsterHovering = false;
 
+let lastTime = 0;
+const fixedDeltaTime = 1/60; // 60 FPS comme référence
+
 function init() {
     // Scène
     scene = new THREE.Scene();
@@ -69,6 +72,20 @@ function init() {
 
     // Ajout des événements de souris
     window.addEventListener('mousemove', onMouseMove);
+
+    // Ajout des contrôles tactiles
+    const jumpButton = document.getElementById('jump-button');
+    jumpButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!isGameOver) jump();
+    });
+    
+    // Support des événements tactiles
+    document.addEventListener('touchstart', (e) => {
+        if (isGameOver) {
+            resetGame();
+        }
+    });
 
     animate();
 }
@@ -126,18 +143,17 @@ function jump() {
     }
 }
 
-function updateGame() {
+function updateGame(deltaTime) {
     if (isGameOver) return;
 
-    // Score et vitesse
     score++;
     document.getElementById('score').textContent = Math.floor(score/10);
     gameSpeed = Math.min(INITIAL_SPEED + (score * SPEED_INCREMENT), MAX_SPEED);
 
-    // Saut du dino
+    // Mettre à jour les positions en fonction du deltaTime
     if (isJumping) {
-        dino.position.y += dino.userData.velocity;
-        dino.userData.velocity -= 0.01;
+        dino.position.y += dino.userData.velocity * deltaTime * 60;
+        dino.userData.velocity -= 0.01 * deltaTime * 60;
 
         if (dino.position.y <= DINO_SIZE/2) {
             dino.position.y = DINO_SIZE/2;
@@ -158,7 +174,7 @@ function updateGame() {
 
     // Mise à jour des obstacles
     obstacles.forEach((obstacle, index) => {
-        obstacle.position.z += gameSpeed;
+        obstacle.position.z += gameSpeed * deltaTime * 60;
 
         if (checkCollision(dino, obstacle)) {
             gameOver();
@@ -219,10 +235,15 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function animate() {
+function animate(currentTime) {
     requestAnimationFrame(animate);
-    updateGame();
-    renderer.render(scene, camera);
+    
+    // Calcul du delta time
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+    
+    // Mise à jour du jeu avec un timing constant
+    updateGame(Math.min(deltaTime, fixedDeltaTime));
 }
 
 function onMouseMove(event) {
