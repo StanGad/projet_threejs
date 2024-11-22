@@ -108,7 +108,6 @@ let mixers = [];
 
 
 
-
     
     const loader = new OBJLoader();
     loader.load(
@@ -284,12 +283,53 @@ function createbackGround() {
 }
 
 function createDino() {
-    const geometry = new THREE.BoxGeometry(DINO_SIZE, DINO_SIZE, DINO_SIZE);
-    const material = new THREE.MeshPhongMaterial({ color: 0x535353 });
-    dino = new THREE.Mesh(geometry, material);
-    dino.position.set(0, DINO_SIZE/2, 0);
-    dino.userData.velocity = 0;
-    scene.add(dino);
+    const mtlLoader = new MTLLoader();
+    mtlLoader.load('./Assets/Snail/Snail.mtl', (materials) => {
+        materials.preload();
+    
+        const objLoader = new OBJLoader();
+        objLoader.setMaterials(materials);
+    
+        objLoader.load(
+            './Assets/Snail/Snail.obj',
+            (object) => {
+                dino = object;
+                
+                dino.scale.set(0.5, 0.5, 0.5);
+                const initialHeight = 0.30; // Définir une constante pour la hauteur initiale
+                dino.position.set(0, initialHeight, 0); // Utiliser cette constante
+                dino.rotation.y = Math.PI/2;
+                 
+                // Ajouter une boîte de collision invisible
+                const box = new THREE.Box3().setFromObject(dino);
+                const boxGeometry = new THREE.BoxGeometry(
+                    (box.max.x - box.min.x) * 3,
+                    (box.max.y - box.min.y) * 2,
+                    (box.max.z - box.min.z) * 2
+                );
+                const boxMaterial = new THREE.MeshBasicMaterial({
+                    wireframe: true,
+                    visible: true // Mettre à false pour cacher la boîte
+                });
+                const collisionBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                
+                collisionBox.position.y = (box.max.y - box.min.y) * 1 ;  
+
+                dino.add(collisionBox);
+                dino.userData.collisionBox = collisionBox;
+                dino.userData.initialY = initialHeight;
+                dino.userData.velocity = 0;
+                
+                scene.add(dino);
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+            },
+            (error) => {
+                console.error('Erreur de chargement du snail:', error);
+            }
+        );
+    });
 }
 
 //const loaderG = new GLTFLoader();
@@ -302,51 +342,36 @@ function createObstacle() {
             model.position.set(0, 0, SPAWN_DISTANCE);
             model.scale.set(1.25, 1.25, 1.25);
             
-            // Charger et appliquer la texture
-            const texture = textureLoader.load('./Assets/bubl.jpeg'); // Remplacez par le chemin de votre texture
-            
-            // Configurer la texture (optionnel)
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(1, 1); // Ajustez la répétition si nécessaire
-            
-            // Appliquer la texture à tous les matériaux du modèle
+            // Animation
+            const mixer = new THREE.AnimationMixer(model);
+            if (gltf.animations.length > 0) {
+                const action = mixer.clipAction(gltf.animations[0]);
+                action.timeScale = 2.5; // Vitesse de l'animation
+                action.play();
+                mixers.push(mixer);
+            }
+
+            // Texture (si vous en avez une)
+            const texture = textureLoader.load('./Assets/bubl.jpeg');
             model.traverse((node) => {
                 if (node.isMesh) {
-                    // Créer un nouveau matériau avec la texture
                     node.material = new THREE.MeshStandardMaterial({
                         map: texture,
                         roughness: 0.7,
                         metalness: 0.3
                     });
-                    
-                    // OU modifier le matériau existant
-                    // node.material.map = texture;
-                    // node.material.needsUpdate = true;
                 }
             });
             
-            // Création et configuration du mixer pour l'animation
-            const mixer = new THREE.AnimationMixer(model);
-            if (gltf.animations.length > 0) {
-                const action = mixer.clipAction(gltf.animations[0]);
-                action.timeScale = 2; // Augmente la vitesse (1 = vitesse normale)
-                action.play();
-                mixers.push(mixer);
-            }
-            
+            // Boîte de collision
             setTimeout(() => {
                 const box = new THREE.Box3().setFromObject(model);
-                
-                // Réduire la taille de la boîte
-                const scale = 0.35  ; // Ajustez cette valeur entre 0 et 1 pour la taille souhaitée
                 const boxGeometry = new THREE.BoxGeometry(
-                    (box.max.x - box.min.x) * scale,
-                    (box.max.y - box.min.y) * scale,
-                    (box.max.z - box.min.z) * scale
+                    (box.max.x - box.min.x) * 0.6,
+                    (box.max.y - box.min.y) * 0.6,
+                    (box.max.z - box.min.z) * 0.6
                 );
-                
-                const boxMaterial = new THREE.MeshBasicMaterial({ 
+                const boxMaterial = new THREE.MeshBasicMaterial({
                     wireframe: true,
                     visible: true
                 });
@@ -371,19 +396,23 @@ function createObstacle() {
 }
 
 function jump() {
-    if (!isJumping && !isGameOver) {
+    if (!isJumping && !isGameOver && dino) {
         isJumping = true;
         dino.userData.velocity = JUMP_FORCE;
         
-        // Jouer le son de saut
+        // S'assurer que la position est correcte avant le saut
+        if (dino.position.y < dino.userData.initialY) {
+            dino.position.y = dino.userData.initialY;
+        }
+        
         jumpSound.currentTime = 0;
         jumpSound.play().catch(e => console.log("Erreur audio:", e));
     }
 }
 
 function updateGame(deltaTime) {
-    if (isGameOver) return;
-
+    if (isGameOver || !dino) return;
+    
     score++;
     document.getElementById('score').textContent = Math.floor(score/10);
     gameSpeed = Math.min(INITIAL_SPEED + (score * SPEED_INCREMENT), MAX_SPEED);
@@ -393,8 +422,9 @@ function updateGame(deltaTime) {
         dino.position.y += dino.userData.velocity * deltaTime * 60;
         dino.userData.velocity -= 0.01 * deltaTime * 60;
 
-        if (dino.position.y <= DINO_SIZE/2) {
-            dino.position.y = DINO_SIZE/2;
+        // Ajuster la hauteur minimale pour correspondre à la position initiale
+        if (dino.position.y <= 0.5) { // Cette valeur doit correspondre à la position initiale du dino
+            dino.position.y = 0.5;     // Même valeur que dans createDino
             isJumping = false;
             dino.userData.velocity = 0;
         }
@@ -412,35 +442,37 @@ function updateGame(deltaTime) {
 
     // Mise à jour des obstacles
     obstacles.forEach((obstacle, index) => {
+        if (!obstacle) return; // Ignorer les obstacles non valides
+        
         obstacle.position.z += gameSpeed * deltaTime * 60;
         
-        // Mettre à jour la position de la boîte de collision
-        if (obstacle.userData.collisionBox) {
-            const box = new THREE.Box3().setFromObject(obstacle);
-            obstacle.userData.collisionBox.position.set(
-                0,
-                (box.max.y - box.min.y) / 2,
-                0
-            );
-        }
-
-        if (checkCollision(dino, obstacle)) {
+        // Vérifier que l'obstacle a une boîte de collision avant de tester
+        if (obstacle.userData.collisionBox && checkCollision(dino, obstacle)) {
             gameOver();
         }
 
         if (obstacle.position.z > DESPAWN_DISTANCE) {
-            removeObstacle(index);
+            scene.remove(obstacle);
+            obstacles.splice(index, 1);
         }
     });
 }
 
 function checkCollision(dino, obstacle) {
-    const dinoBox = new THREE.Box3().setFromObject(dino);
-    
-    // Utiliser la boîte de collision de l'obstacle
-    const obstacleBox = new THREE.Box3().setFromObject(obstacle.userData.collisionBox);
-    
-    return dinoBox.intersectsBox(obstacleBox);
+    // Vérifier que le dino et l'obstacle existent et ont leurs boîtes de collision
+    if (!dino || !obstacle || !dino.userData.collisionBox || !obstacle.userData.collisionBox) {
+        return false;
+    }
+
+    try {
+        const dinoBox = new THREE.Box3().setFromObject(dino.userData.collisionBox);
+        const obstacleBox = new THREE.Box3().setFromObject(obstacle.userData.collisionBox);
+        
+        return dinoBox.intersectsBox(obstacleBox);
+    } catch (error) {
+        console.warn("Erreur lors de la vérification des collisions:", error);
+        return false;
+    }
 }
 
 function gameOver() {
@@ -500,10 +532,9 @@ function onWindowResize() {
 
 //const clock = new THREE.Clock();
 function animate(currentTime) {
+    const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30);
     
-    const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30); // Limite à 30 FPS sur mobile
-
-    // Mettre à jour toutes les animations
+    // Mettre à jour les animations
     mixers.forEach((mixer) => {
         mixer.update(deltaTime);
     });
