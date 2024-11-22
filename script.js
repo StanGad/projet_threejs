@@ -302,6 +302,30 @@ function createObstacle() {
             model.position.set(0, 0, SPAWN_DISTANCE);
             model.scale.set(1.25, 1.25, 1.25);
             
+            // Charger et appliquer la texture
+            const texture = textureLoader.load('./Assets/bubl.jpeg'); // Remplacez par le chemin de votre texture
+            
+            // Configurer la texture (optionnel)
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, 1); // Ajustez la répétition si nécessaire
+            
+            // Appliquer la texture à tous les matériaux du modèle
+            model.traverse((node) => {
+                if (node.isMesh) {
+                    // Créer un nouveau matériau avec la texture
+                    node.material = new THREE.MeshStandardMaterial({
+                        map: texture,
+                        roughness: 0.7,
+                        metalness: 0.3
+                    });
+                    
+                    // OU modifier le matériau existant
+                    // node.material.map = texture;
+                    // node.material.needsUpdate = true;
+                }
+            });
+            
             // Création et configuration du mixer pour l'animation
             const mixer = new THREE.AnimationMixer(model);
             if (gltf.animations.length > 0) {
@@ -569,7 +593,7 @@ composer.addPass(outputPass);
 
 const filmPass = new FilmPass(0.35, 0.025, 648, false);
 
-composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
+// composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
 
 
 animate();
