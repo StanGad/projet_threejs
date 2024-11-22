@@ -125,7 +125,7 @@ loader.load(
                 });
             }
         });
-        object.scale.setScalar(0.2);
+        object.scale.setScalar(0.3);
         object.position.set(0, 0, -25); // Déplace l'objet à x=1, y=2, z=3
         object.rotation.x = -Math.PI / 2; 
         scene.add(object);
@@ -141,14 +141,59 @@ loader.load(
 
 
 function createGround() {
-    const geometry = new THREE.PlaneGeometry(25, 80); // Augmentation de la profondeur du sol
-    const material = new THREE.MeshPhongMaterial({ 
-        color: 0x90EE90,
-        side: THREE.DoubleSide 
+    // Chargement des textures
+    const textureLoader = new THREE.TextureLoader();
+
+    // Remplacez les chemins par vos fichiers de textures
+    const baseColor = textureLoader.load('./Assets/RockMapTest/Stylized_Rocks_003_basecolor.png');
+    const aoMap = textureLoader.load('./Assets/RockMapTest/Stylized_Rocks_003_ambientOcclusion.png'); // Ambient Occlusion
+    const heightMap = textureLoader.load('./Assets/RockMapTest/Stylized_Rocks_003_height.png'); // Height Map
+    const normalMap = textureLoader.load('./Assets/RockMapTest/Stylized_Rocks_003_normal.png'); // Normal Map
+    const roughnessMap = textureLoader.load('./Assets/RockMapTest/Stylized_Rocks_003_roughness.png'); // Roughness Map
+
+    // Application des répétitions et de l'alignement des textures
+    const scale = 20 ;  // Ajustez cette valeur pour contrôler la taille des textures
+    baseColor.repeat.set(scale, scale);
+    aoMap.repeat.set(scale, scale);
+    heightMap.repeat.set(scale, scale);
+    normalMap.repeat.set(scale, scale);
+    roughnessMap.repeat.set(scale, scale);
+
+    baseColor.wrapS = THREE.MirroredRepeatWrapping;
+    baseColor.wrapT = THREE.MirroredRepeatWrapping;
+    aoMap.wrapS = THREE.MirroredRepeatWrapping;
+    aoMap.wrapT = THREE.MirroredRepeatWrapping;
+    heightMap.wrapS = THREE.MirroredRepeatWrapping;
+    heightMap.wrapT = THREE.MirroredRepeatWrapping;
+    normalMap.wrapS = THREE.MirroredRepeatWrapping;
+    normalMap.wrapT = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapS = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapT = THREE.MirroredRepeatWrapping;
+
+    // Création de la géométrie du sol
+    const geometry = new THREE.PlaneGeometry(25, 80);
+
+    // Création du matériau avec MeshStandardMaterial
+    const material = new THREE.MeshStandardMaterial({
+        map: baseColor,
+        aoMap: aoMap,
+        displacementMap: heightMap,
+        displacementScale: 0.1,
+        normalMap: normalMap,
+        roughnessMap: roughnessMap,
+        roughness: 0.5,
+        metalness: 0.0,
+        side: THREE.DoubleSide
     });
+
+    // Appliquer le matériau à la géométrie
     ground = new THREE.Mesh(geometry, material);
+
+    // Rotation et positionnement du sol
     ground.rotation.x = -Math.PI / 2;
-    ground.position.z = SPAWN_DISTANCE/2; // Centrer le sol par rapport à la zone de jeu
+    ground.position.z = SPAWN_DISTANCE / 2;
+
+    // Ajouter le sol à la scène
     scene.add(ground);
 }
 
@@ -389,3 +434,7 @@ composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
 
 
 animate();
+
+
+
+
