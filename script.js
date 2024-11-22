@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { Raycaster } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from './node_modules/three/examples/jsm/loaders/OBJLoader.js';
+
+
+
+
 
 let scene, camera, renderer, dino, ground;
 let obstacles = [];
@@ -85,6 +91,31 @@ function init() {
 
     animate();
 }
+
+
+const loader = new OBJLoader();
+loader.load(
+    './Assets/WallFond.obj', // Chemin du fichier OBJ
+    (object) => {
+        object.traverse((node) => {
+            if (node.isMesh) {
+                node.material = new THREE.MeshNormalMaterial(); // Remplace le matériau par un matériau normal
+            }
+        });
+        object.scale.setScalar(0.2);
+        object.position.set(0, 0, -25); // Déplace l'objet à x=1, y=2, z=3
+        object.rotation.x = -Math.PI / 2; 
+        scene.add(object);
+    },
+    (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded'); // Progression du chargement
+    },
+    (error) => {
+        console.error('Une erreur est survenue lors du chargement :', error);
+    }
+);
+
+
 
 function createGround() {
     const geometry = new THREE.PlaneGeometry(25, 80); // Augmentation de la profondeur du sol
