@@ -2,6 +2,17 @@ import * as THREE from 'three';
 import { Raycaster } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from './node_modules/three/examples/jsm/loaders/OBJLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
+
+
+
+
+const textureLoader = new THREE.TextureLoader(); 
+
 
 
 
@@ -36,7 +47,7 @@ let isMonsterHovering = false;
 let lastTime = 0;
 const fixedDeltaTime = 1/60; // 60 FPS comme référence
 
-function init() {
+
     // Scène
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB); // Ciel bleu
@@ -87,10 +98,11 @@ function init() {
     jumpButton.addEventListener('mousedown', handleJumpTouch, { passive: false });
     
     // Événement pour le redémarrage
-    document.addEventListener('touchstart', handleRestart, { passive: false });
+    document.addEventListener('touchstart', handleRestart, { passive: false });  
 
-    animate();
-}
+
+
+
 
 
 const loader = new OBJLoader();
@@ -99,7 +111,18 @@ loader.load(
     (object) => {
         object.traverse((node) => {
             if (node.isMesh) {
-                node.material = new THREE.MeshNormalMaterial(); // Remplace le matériau par un matériau normal
+                const texture = textureLoader.load('./Assets/Textures/RockTexture.jpg'); // Remplacez par le chemin de votre texture
+               // texture.repeat.set(2, 2);  
+               texture.repeat.set(0.005, 0.005);  // Répète la texture 10 fois sur les axes X et Y
+               texture.wrapS = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe S
+               texture.wrapT = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe T
+                // Appliquer la texture au matériau
+                node.material = new THREE.MeshStandardMaterial({
+                    map: texture,  // Applique la texture à la carte de diffuse
+                   // color: new THREE.Color(0x7d7d7d), // Couleur gris pierre
+                    roughness: 0.8, // D'autres propriétés comme la rugosité pour ajuster l'apparence
+                    //metalness: 0.1  // Ajuste la métallisation
+                });
             }
         });
         object.scale.setScalar(0.2);
@@ -274,6 +297,8 @@ function onWindowResize() {
     }
 }
 
+
+
 function animate(currentTime) {
     requestAnimationFrame(animate);
     
@@ -281,7 +306,8 @@ function animate(currentTime) {
     lastTime = currentTime;
     
     updateGame(deltaTime);
-    renderer.render(scene, camera);
+    composer.render();
+   // renderer.render(scene, camera);
 }
 
 function onMouseMove(event) {
@@ -339,4 +365,27 @@ document.body.addEventListener('touchmove', function(e) {
     e.preventDefault();
 }, { passive: false });
 
-init(); 
+
+//PostPRocess
+
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(
+new THREE.Vector2(window.innerWidth, window.innerHeight),
+0.3, // strength
+0.5, // radius
+0.1 // threshold
+);
+const outputPass = new OutputPass();
+
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
+composer.addPass(outputPass); 
+
+
+const filmPass = new FilmPass(0.35, 0.025, 648, false);
+
+composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
+
+
+animate();
