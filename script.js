@@ -57,8 +57,8 @@ let mixers = [];
 
     // Caméra
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(5, 3, 5);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(5, 4, 0);
+    camera.lookAt(0, 1, -3  );
 
     // Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -76,6 +76,7 @@ let mixers = [];
     createGround();
     createDino();
     createPortal();
+    leftWall();
 
     // Event Listeners
     window.addEventListener('resize', onWindowResize, false);
@@ -147,7 +148,67 @@ let mixers = [];
 const loaderG = new GLTFLoader();
 let mixer; // Mixer pour les animations
 
+function leftWall() {
+    const textureLoader = new THREE.TextureLoader();
 
+    // Chargement des textures
+    const baseColor = textureLoader.load('./Assets/Portal/Abstract_011_basecolor.jpg');
+    const aoMap = textureLoader.load('./Assets/Portal/Abstract_011_ambientOcclusion.jpg');
+    const heightMap = textureLoader.load('./Assets/Portal/Abstract_011_height.png');
+    const normalMap = textureLoader.load('./Assets/Portal/Abstract_011_normal.jpg');
+    const roughnessMap = textureLoader.load('./Assets/Portal/Abstract_011_roughness.jpg');
+
+    // Application des répétitions et de l'alignement des textures
+    const scale =2;
+    baseColor.repeat.set(scale, scale);
+    aoMap.repeat.set(scale, scale);
+    heightMap.repeat.set(scale, scale);
+    normalMap.repeat.set(scale, scale);
+    roughnessMap.repeat.set(scale, scale);
+
+    baseColor.wrapS = THREE.MirroredRepeatWrapping;
+    baseColor.wrapT = THREE.MirroredRepeatWrapping;
+    aoMap.wrapS = THREE.MirroredRepeatWrapping;
+    aoMap.wrapT = THREE.MirroredRepeatWrapping;
+    heightMap.wrapS = THREE.MirroredRepeatWrapping;
+    heightMap.wrapT = THREE.MirroredRepeatWrapping;
+    normalMap.wrapS = THREE.MirroredRepeatWrapping;
+    normalMap.wrapT = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapS = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapT = THREE.MirroredRepeatWrapping;
+
+    // Création de la géométrie du plan
+    const geometry = new THREE.PlaneGeometry(40, 25);
+
+    // Création du matériau avec MeshStandardMaterial
+    const material = new THREE.MeshStandardMaterial({
+        map: baseColor,
+        aoMap: aoMap,
+        displacementMap: heightMap,
+        displacementScale: 1,
+        normalMap: normalMap,
+       // roughnessMap: roughnessMap,
+      //  roughness: 0.5,
+        metalness: 1.0,
+        side: THREE.DoubleSide
+    });
+
+    // Création du mesh avec la géométrie et le matériau
+    const leftWall = new THREE.Mesh(geometry, material);
+
+    // Rotation du plan
+    leftWall.rotation.z = -Math.PI ;
+    leftWall.rotation.y = -Math.PI / 2;
+
+
+    // Positionnement du plan
+    leftWall.position.set(-5, 0, -10);
+
+    // Ajout du plan à la scène
+    scene.add(leftWall);
+
+    return leftWall;
+}
 
 
 function createPortal() {
@@ -270,17 +331,7 @@ function createGround() {
     scene.add(ground);
 }
 
-function createbackGround() {
-    const geometry = new THREE.PlaneGeometry(80, 50); // Ajustement du fond
-    const material = new THREE.MeshPhongMaterial({ 
-        color: 0x90EE90,
-        side: THREE.DoubleSide 
-    });
-    ground = new THREE.Mesh(geometry, material);
-    ground.rotation.y = -Math.PI / 2;
-    ground.position.set(-5, 0, SPAWN_DISTANCE/2); 
-    scene.add(ground);
-}
+
 
 function createDino() {
     const mtlLoader = new MTLLoader();
@@ -309,7 +360,7 @@ function createDino() {
                 );
                 const boxMaterial = new THREE.MeshBasicMaterial({
                     wireframe: true,
-                    visible: true // Mettre à false pour cacher la boîte
+                    visible: false // Mettre à false pour cacher la boîte
                 });
                 const collisionBox = new THREE.Mesh(boxGeometry, boxMaterial);
                 
@@ -373,7 +424,7 @@ function createObstacle() {
                 );
                 const boxMaterial = new THREE.MeshBasicMaterial({
                     wireframe: true,
-                    visible: true
+                    visible: false
                 });
                 const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
                 
@@ -624,7 +675,7 @@ composer.addPass(outputPass);
 
 const filmPass = new FilmPass(0.35, 0.025, 648, false);
 
-// composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
+ composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
 
 
 animate();
