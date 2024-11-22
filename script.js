@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { Raycaster } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OBJLoader } from './node_modules/three/examples/jsm/loaders/OBJLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -37,7 +38,7 @@ const JUMP_FORCE = 0.25; // Force de saut constante
 
 // Ajout de constantes pour la profondeur
 const SPAWN_DISTANCE = -30; // Distance d'apparition des obstacles
-const DESPAWN_DISTANCE = 5; // Distance de disparition
+const DESPAWN_DISTANCE = 15; // Distance de disparition
 
 let raycaster, mouse;
 let hoverSound, jumpSound, deadSound, monsterHoverSound;
@@ -47,6 +48,8 @@ let isMonsterHovering = false;
 let lastTime = 0;
 const fixedDeltaTime = 1/60; // 60 FPS comme référence
 
+// Au début du fichier, ajoutez un tableau pour stocker les mixers
+let mixers = [];
 
     // Scène
     scene = new THREE.Scene();
@@ -72,6 +75,7 @@ const fixedDeltaTime = 1/60; // 60 FPS comme référence
 
     createGround();
     createDino();
+    createPortal();
 
     // Event Listeners
     window.addEventListener('resize', onWindowResize, false);
@@ -105,38 +109,108 @@ const fixedDeltaTime = 1/60; // 60 FPS comme référence
 
 
 
-const loader = new OBJLoader();
-loader.load(
-    './Assets/WallFond.obj', // Chemin du fichier OBJ
-    (object) => {
-        object.traverse((node) => {
-            if (node.isMesh) {
-                const texture = textureLoader.load('./Assets/Textures/RockTexture.jpg'); // Remplacez par le chemin de votre texture
-               // texture.repeat.set(2, 2);  
-               texture.repeat.set(0.005, 0.005);  // Répète la texture 10 fois sur les axes X et Y
-               texture.wrapS = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe S
-               texture.wrapT = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe T
-                // Appliquer la texture au matériau
-                node.material = new THREE.MeshStandardMaterial({
-                    map: texture,  // Applique la texture à la carte de diffuse
-                   // color: new THREE.Color(0x7d7d7d), // Couleur gris pierre
-                    roughness: 0.8, // D'autres propriétés comme la rugosité pour ajuster l'apparence
-                    //metalness: 0.1  // Ajuste la métallisation
-                });
-            }
-        });
-        object.scale.setScalar(0.3);
-        object.position.set(0, 0, -25); // Déplace l'objet à x=1, y=2, z=3
-        object.rotation.x = -Math.PI / 2; 
-        scene.add(object);
-    },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded'); // Progression du chargement
-    },
-    (error) => {
-        console.error('Une erreur est survenue lors du chargement :', error);
-    }
-);
+    
+    const loader = new OBJLoader();
+    loader.load(
+        './Assets/WallFond.obj', // Chemin du fichier OBJ
+        (object) => {
+            object.traverse((node) => {
+                if (node.isMesh) {
+                    const texture = textureLoader.load('./Assets/Textures/RockTexture.jpg'); // Remplacez par le chemin de votre texture
+                   // texture.repeat.set(2, 2);  
+                   texture.repeat.set(0.005, 0.005);  // Répète la texture 10 fois sur les axes X et Y
+                   texture.wrapS = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe S
+                   texture.wrapT = THREE.RepeatWrapping; // Assurez-vous que la texture se répète sur l'axe T
+                    // Appliquer la texture au matériau
+                    node.material = new THREE.MeshStandardMaterial({
+                        map: texture,  // Applique la texture à la carte de diffuse
+                       // color: new THREE.Color(0x7d7d7d), // Couleur gris pierre
+                        roughness: 0.8, // D'autres propriétés comme la rugosité pour ajuster l'apparence
+                        //metalness: 0.1  // Ajuste la métallisation
+                    });
+                }
+            });
+            object.scale.setScalar(0.3);
+            object.position.set(0, 0, -25); // Déplace l'objet à x=1, y=2, z=3
+            object.rotation.x = -Math.PI / 2; 
+            scene.add(object);
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded'); // Progression du chargement
+        },
+        (error) => {
+            console.error('Une erreur est survenue lors du chargement :', error);
+        }
+    );
+    
+
+    // Créer un loader pour le modèle GLTF
+const loaderG = new GLTFLoader();
+let mixer; // Mixer pour les animations
+
+
+
+
+function createPortal() {
+    const textureLoader = new THREE.TextureLoader();
+
+    // Chargement des textures
+    const baseColor = textureLoader.load('./Assets/Portal/Abstract_011_basecolor.jpg');
+    const aoMap = textureLoader.load('./Assets/Portal/Abstract_011_ambientOcclusion.jpg');
+    const heightMap = textureLoader.load('./Assets/Portal/Abstract_011_height.png');
+    const normalMap = textureLoader.load('./Assets/Portal/Abstract_011_normal.jpg');
+    const roughnessMap = textureLoader.load('./Assets/Portal/Abstract_011_roughness.jpg');
+
+    // Application des répétitions et de l'alignement des textures
+    const scale = 1;
+    baseColor.repeat.set(scale, scale);
+    aoMap.repeat.set(scale, scale);
+    heightMap.repeat.set(scale, scale);
+    normalMap.repeat.set(scale, scale);
+    roughnessMap.repeat.set(scale, scale);
+
+    baseColor.wrapS = THREE.MirroredRepeatWrapping;
+    baseColor.wrapT = THREE.MirroredRepeatWrapping;
+    aoMap.wrapS = THREE.MirroredRepeatWrapping;
+    aoMap.wrapT = THREE.MirroredRepeatWrapping;
+    heightMap.wrapS = THREE.MirroredRepeatWrapping;
+    heightMap.wrapT = THREE.MirroredRepeatWrapping;
+    normalMap.wrapS = THREE.MirroredRepeatWrapping;
+    normalMap.wrapT = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapS = THREE.MirroredRepeatWrapping;
+    roughnessMap.wrapT = THREE.MirroredRepeatWrapping;
+
+    // Création de la géométrie du plan
+    const geometry = new THREE.PlaneGeometry(10, 10);
+
+    // Création du matériau avec MeshStandardMaterial
+    const material = new THREE.MeshStandardMaterial({
+        map: baseColor,
+        aoMap: aoMap,
+        displacementMap: heightMap,
+        displacementScale: 0.01,
+        normalMap: normalMap,
+       // roughnessMap: roughnessMap,
+      //  roughness: 0.5,
+        metalness: 1.0,
+        side: THREE.DoubleSide
+    });
+
+    // Création du mesh avec la géométrie et le matériau
+    const portal = new THREE.Mesh(geometry, material);
+
+    // Rotation du plan
+    portal.rotation.z = -Math.PI / 2;
+
+    // Positionnement du plan
+    portal.position.set(0, 0, -27);
+
+    // Ajout du plan à la scène
+    scene.add(portal);
+
+    return portal;
+}
+
 
 
 
@@ -218,13 +292,58 @@ function createDino() {
     scene.add(dino);
 }
 
+//const loaderG = new GLTFLoader();
+
 function createObstacle() {
-    const geometry = new THREE.BoxGeometry(OBSTACLE_SIZE, OBSTACLE_SIZE * 2, OBSTACLE_SIZE);
-    const material = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
-    const obstacle = new THREE.Mesh(geometry, material);
-    obstacle.position.set(0, OBSTACLE_SIZE, SPAWN_DISTANCE); // Apparition plus loin
-    scene.add(obstacle);
-    obstacles.push(obstacle);
+    loaderG.load(
+        './Assets/CesiumMan.glb',
+        (gltf) => {
+            const model = gltf.scene;
+            model.position.set(0, 0, SPAWN_DISTANCE);
+            model.scale.set(1.25, 1.25, 1.25);
+            
+            // Création et configuration du mixer pour l'animation
+            const mixer = new THREE.AnimationMixer(model);
+            if (gltf.animations.length > 0) {
+                const action = mixer.clipAction(gltf.animations[0]);
+                action.timeScale = 2; // Augmente la vitesse (1 = vitesse normale)
+                action.play();
+                mixers.push(mixer);
+            }
+            
+            setTimeout(() => {
+                const box = new THREE.Box3().setFromObject(model);
+                
+                // Réduire la taille de la boîte
+                const scale = 0.35  ; // Ajustez cette valeur entre 0 et 1 pour la taille souhaitée
+                const boxGeometry = new THREE.BoxGeometry(
+                    (box.max.x - box.min.x) * scale,
+                    (box.max.y - box.min.y) * scale,
+                    (box.max.z - box.min.z) * scale
+                );
+                
+                const boxMaterial = new THREE.MeshBasicMaterial({ 
+                    wireframe: true,
+                    visible: true
+                });
+                const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+                
+                boxMesh.position.y = (box.max.y - box.min.y) / 2;
+                
+                model.add(boxMesh);
+                model.userData.collisionBox = boxMesh;
+            }, 100);
+            
+            scene.add(model);
+            obstacles.push(model);
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        },
+        (error) => {
+            console.error('Erreur de chargement du modèle:', error);
+        }
+    );
 }
 
 function jump() {
@@ -270,21 +389,33 @@ function updateGame(deltaTime) {
     // Mise à jour des obstacles
     obstacles.forEach((obstacle, index) => {
         obstacle.position.z += gameSpeed * deltaTime * 60;
+        
+        // Mettre à jour la position de la boîte de collision
+        if (obstacle.userData.collisionBox) {
+            const box = new THREE.Box3().setFromObject(obstacle);
+            obstacle.userData.collisionBox.position.set(
+                0,
+                (box.max.y - box.min.y) / 2,
+                0
+            );
+        }
 
         if (checkCollision(dino, obstacle)) {
             gameOver();
         }
 
         if (obstacle.position.z > DESPAWN_DISTANCE) {
-            scene.remove(obstacle);
-            obstacles.splice(index, 1);
+            removeObstacle(index);
         }
     });
 }
 
 function checkCollision(dino, obstacle) {
     const dinoBox = new THREE.Box3().setFromObject(dino);
-    const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+    
+    // Utiliser la boîte de collision de l'obstacle
+    const obstacleBox = new THREE.Box3().setFromObject(obstacle.userData.collisionBox);
+    
     return dinoBox.intersectsBox(obstacleBox);
 }
 
@@ -343,11 +474,19 @@ function onWindowResize() {
 }
 
 
-
+//const clock = new THREE.Clock();
 function animate(currentTime) {
-    requestAnimationFrame(animate);
     
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30); // Limite à 30 FPS sur mobile
+
+    // Mettre à jour toutes les animations
+    mixers.forEach((mixer) => {
+        mixer.update(deltaTime);
+    });
+    
+    requestAnimationFrame(animate);
+    
+    
     lastTime = currentTime;
     
     updateGame(deltaTime);
@@ -434,6 +573,17 @@ composer.addPass(filmPass);   // Ajouter FilmPass pour un effet rétro
 
 
 animate();
+
+// Ajoutez une fonction pour nettoyer les mixers lors de la suppression des obstacles
+function removeObstacle(index) {
+    const obstacle = obstacles[index];
+    scene.remove(obstacle);
+    
+    // Trouver et supprimer le mixer correspondant
+    mixers = mixers.filter((mixer) => mixer.getRoot() !== obstacle);
+    
+    obstacles.splice(index, 1);
+}
 
 
 
