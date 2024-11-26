@@ -460,11 +460,20 @@ function jump() {
         jumpSound.play().catch(e => console.log("Erreur audio:", e));
     }
 }
+let size = 30; // taille initiale
+let redValue = 0; // valeur rouge initiale (0 = blanc, 255 = rouge)
 
+let scoreElement = document.getElementById("score");
 function updateGame(deltaTime) {
     if (isGameOver || !dino) return;
     
     score++;
+    size += 0.04; // Augmenter la taille de la police
+    redValue = Math.min(255, redValue + 0.05); 
+    scoreElement.style.fontSize = size + "px";
+    scoreElement.style.color = `rgb(${redValue}, 0, 0)`; // Plus rouge au fur et à mesure
+
+
     document.getElementById('score').textContent = Math.floor(score/10);
     gameSpeed = Math.min(INITIAL_SPEED + (score * SPEED_INCREMENT), MAX_SPEED);
 
@@ -540,6 +549,8 @@ function resetGame() {
     gameSpeed = 0.1;
     isGameOver = false;
     isJumping = false;
+     size = 30; // taille initiale
+    redValue = 0; // valeur rouge initiale (0 = blanc, 255 = rouge)
     
     // Réinitialisation du dino
     dino.position.y = DINO_SIZE/2;

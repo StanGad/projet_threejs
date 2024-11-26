@@ -139,6 +139,7 @@ body {
     font-size: 30px;
     font-weight: bold;
     z-index: 100;
+    transition: color 0.5s ease, font-size 0.5s ease; /* Transition pour l'animation */
 }
 
 .game-over {
