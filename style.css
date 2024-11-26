@@ -157,6 +157,12 @@ body {
     z-index: 100;
 }
 
+.best-score {
+    margin-top: 10px;
+    font-size: 18px;
+    color: rgb(255, 255, 255);
+}
+
 #dino-info {
     position: fixed;
     background: rgba(0, 0, 0, 0.8);

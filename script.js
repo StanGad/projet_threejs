@@ -539,10 +539,20 @@ function gameOver() {
     isGameOver = true;
     document.querySelector('.game-over').style.display = 'block';
     
+    // Sauvegarder le meilleur score
+    saveBestScore("Joueur", Math.floor(score/10)); // Remplacez "Joueur" par le nom du joueur si nécessaire
+   // localStorage.clear();
+    // Récupérer le meilleur score
+    const bestScore = localStorage.getItem('bestScore') || 0; // Récupérer le meilleur score du localStorage
+
+    // Afficher le meilleur score
+    document.querySelector('.best-score').textContent = `Meilleur Score: ${bestScore}`;
+    
     // Jouer le son de mort
     deadSound.currentTime = 0;
     deadSound.play().catch(e => console.log("Erreur audio:", e));
 }
+
 
 function resetGame() {
     score = 0;
@@ -559,7 +569,7 @@ function resetGame() {
     // Suppression des obstacles
     obstacles.forEach(obstacle => scene.remove(obstacle));
     obstacles = [];
-    
+   
     document.querySelector('.game-over').style.display = 'none';
 }
 
@@ -665,6 +675,18 @@ function handleRestart(e) {
 document.body.addEventListener('touchmove', function(e) {
     e.preventDefault();
 }, { passive: false });
+
+
+
+function saveBestScore(playerName, score) {
+    const currentBestScore = localStorage.getItem('bestScore') ? parseInt(localStorage.getItem('bestScore')) : 0;
+
+    // Si le score actuel est meilleur que le meilleur score enregistré, on met à jour
+    if (score > currentBestScore) {
+        localStorage.setItem('bestScore', score); // Sauvegarder le nouveau meilleur score
+    }
+}
+
 
 
 //PostPRocess
