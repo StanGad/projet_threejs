@@ -232,7 +232,7 @@ function createPortal() {
  
     const geometry = new THREE.PlaneGeometry(10, 10);
 
-    ial
+
     const material = new THREE.MeshStandardMaterial({
         map: baseColor,
         aoMap: aoMap,
@@ -307,7 +307,7 @@ function createGround() {
     ground = new THREE.Mesh(geometry, material);
     ground.rotation.x = -Math.PI / 2;
     ground.position.z = SPAWN_DISTANCE / 2;
-e
+
     scene.add(ground);
 }
 
